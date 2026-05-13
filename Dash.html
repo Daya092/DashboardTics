@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Ambiental IoT</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="dashboard-container">
+
+    <!-- HEADER -->
+    <header class="dashboard-header">
+      <div>
+        <h1>
+          <i class="fa-solid fa-microchip"></i>
+          Dashboard Ambiental IoT
+        </h1>
+        <p>Monitoreo en tiempo real de sensores ambientales</p>
+      </div>
+
+      <div class="status-badge">
+        <span class="status-dot"></span>
+        En línea
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="dashboard-content">
+
+      <!-- LEFT SIDE -->
+      <section class="charts-section">
+
+        <!-- Temperature Card -->
+        <div class="card chart-card">
+          <div class="card-header">
+            <div>
+              <h2>
+                <i class="fa-solid fa-temperature-high"></i>
+                Temperatura
+              </h2>
+              <p>Lecturas en tiempo real</p>
+            </div>
+
+            <div class="metric-badge temperature-badge">
+              <span id="currentTemp">--°C</span>
+            </div>
+          </div>
+
+          <canvas id="temperatureChart"></canvas>
+        </div>
+
+        <!-- Humidity Card -->
+        <div class="card chart-card">
+          <div class="card-header">
+            <div>
+              <h2>
+                <i class="fa-solid fa-droplet"></i>
+                Humedad
+              </h2>
+              <p>Porcentaje ambiental</p>
+            </div>
+
+            <div class="metric-badge humidity-badge">
+              <span id="currentHumidity">--%</span>
+            </div>
+          </div>
+
+          <canvas id="humidityChart"></canvas>
+        </div>
+
+      </section>
+
+      <!-- RIGHT SIDE -->
+      <aside class="activity-panel card">
+
+        <div class="activity-header">
+          <h2>
+            <i class="fa-solid fa-wave-square"></i>
+            Actividad Reciente
+          </h2>
+        </div>
+
+        <div class="activity-list" id="activityList">
+          <!-- Dynamic content -->
+        </div>
+
+      </aside>
+
+    </main>
+
+  </div>
+
+  <script src="code.js"></script>
+</body>
+</html>
