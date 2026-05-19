@@ -20,6 +20,7 @@ const currentTemp = document.getElementById("currentTemp");
 const currentHumidity = document.getElementById("currentHumidity");
 
 const MAX_ACTIVITY_ITEMS = 10;
+let lastReadingId = null;
 
 // ======================================================
 // CHART CONFIGURATION
@@ -128,9 +129,11 @@ function chartOptions(metricName, minValue = -10, maxValue = 100) {
 
           afterBody: function (tooltipItems) {
             const index = tooltipItems[0].dataIndex;
+            const user = fullDateData[index]?.user || "--";
 
             return [
               `Hora: ${fullDateData[index]?.time || "--"}`,
+              `Usuario: ${user}`,
             ];
           },
         },
@@ -189,6 +192,16 @@ async function fetchSensorData() {
       .filter((reading) => reading && reading.id && reading.fecha)
       .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
 
+    if (!sortedReadings.length) {
+      return;
+    }
+
+    const latestId = sortedReadings[sortedReadings.length - 1].id;
+    if (latestId === lastReadingId) {
+      return;
+    }
+
+    lastReadingId = latestId;
     renderDashboard(sortedReadings);
   } catch (error) {
     console.error("Error fetching API data:", error);
@@ -221,12 +234,13 @@ function renderDashboard(readings) {
       second: "2-digit",
     });
 
-    temperatureLabels.push(`${formattedDate} ${formattedTime}`);
+    temperatureLabels.push(formattedDate);
     temperatureData.push(clampedTemperature);
     humidityData.push(clampedHumidity);
     fullDateData.push({
       date: formattedDate,
       time: formattedTime,
+      user: reading.nombre_usuario || "Usuario",
     });
 
     return {
