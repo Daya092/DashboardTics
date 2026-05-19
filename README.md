@@ -1,5 +1,11 @@
 # DashboardTics
 
+# Para ejecutar:
+- python3 -m http.server 8000
+en otra terminal:
+- python3 proxy.py
+
+
 url: https://solid-potato-4j75rxjjwrgxhqqr4-3000.app.github.dev/
 
 ## Endpoints válidos
