@@ -2,7 +2,7 @@
 // API CONFIGURATION
 // ======================================================
 
-const API_URL = "http://localhost:3001/api/lecturas";
+const API_URL = "https://solid-potato-4j75rxjjwrgxhqqr4-3000.app.github.dev/api/lecturas";
 
 // Intervalo de actualización (5 segundos)
 const UPDATE_INTERVAL = 5000;
@@ -14,14 +14,12 @@ const UPDATE_INTERVAL = 5000;
 const temperatureLabels = [];
 const temperatureData = [];
 const humidityData = [];
-const percentageData = [];
 
 const activityList = document.getElementById("activityList");
 const currentTemp = document.getElementById("currentTemp");
 const currentHumidity = document.getElementById("currentHumidity");
 
-const MAX_DATA_POINTS = 15;
-const seenReadingIds = new Set();
+const MAX_ACTIVITY_ITEMS = 10;
 
 // ======================================================
 // CHART CONFIGURATION
@@ -52,16 +50,6 @@ const temperatureChart = new Chart(tempCtx, {
         pointRadius: 5,
         pointHoverRadius: 7,
       },
-      {
-        label: "Porcentaje",
-        data: percentageData,
-        borderColor: "#f59e0b",
-        backgroundColor: "rgba(245,158,11,0.08)",
-        fill: false,
-        tension: 0.4,
-        borderWidth: 2,
-        borderDash: [5, 5],
-      },
     ],
   },
   options: chartOptions("Temperatura"),
@@ -88,16 +76,6 @@ const humidityChart = new Chart(humCtx, {
         borderWidth: 3,
         pointRadius: 5,
         pointHoverRadius: 7,
-      },
-      {
-        label: "Porcentaje",
-        data: percentageData,
-        borderColor: "#22c55e",
-        backgroundColor: "rgba(34,197,94,0.08)",
-        fill: false,
-        tension: 0.4,
-        borderWidth: 2,
-        borderDash: [5, 5],
       },
     ],
   },
@@ -199,40 +177,19 @@ async function fetchSensorData() {
     }
 
     const data = await response.json();
+    const readings = Array.isArray(data?.data) ? data.data : [];
 
-    /*
-      Expected API Format:
-      {
-        "success": true,
-        "data": [
-          {
-            "id": 1,
-            "nombre_usuario": "Carlos",
-            "temperatura": 24.5,
-            "humedad": 60.1,
-            "fecha": "2026-05-13T00:47:15.000Z"
-          }
-        ]
-      }
-    */
-
-    if (data?.success && Array.isArray(data.data)) {
-      const newReadings = data.data
-        .filter((reading) => {
-          if (!reading?.id) {
-            console.warn("Lectura sin id ignorada:", reading);
-            return false;
-          }
-          return !seenReadingIds.has(reading.id);
-        })
-        .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
-
-      newReadings.forEach(updateDashboard);
-    } else if (data?.id) {
-      updateDashboard(data);
-    } else {
-      console.warn("Formato de API inesperado:", data);
+    if (!readings.length) {
+      console.warn("No se encontraron lecturas en la respuesta de la API.", data);
+      renderDashboard([]);
+      return;
     }
+
+    const sortedReadings = readings
+      .filter((reading) => reading && reading.id && reading.fecha)
+      .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+
+    renderDashboard(sortedReadings);
   } catch (error) {
     console.error("Error fetching API data:", error);
   }
@@ -242,75 +199,67 @@ async function fetchSensorData() {
 // UPDATE DASHBOARD
 // ======================================================
 
-function updateDashboard(data) {
-  const {
-    id,
-    temperatura: temperature,
-    humedad: humidity,
-    fecha: timestamp,
-  } = data;
+function renderDashboard(readings) {
+  temperatureLabels.length = 0;
+  temperatureData.length = 0;
+  humidityData.length = 0;
+  fullDateData.length = 0;
+  activityList.innerHTML = "";
 
-  const percentage = 0; // No hay percentage en la API, usar 0
+  const formattedReadings = readings.map((reading) => {
+    const temperature = Number(reading.temperatura ?? 0);
+    const humidity = Number(reading.humedad ?? 0);
+    const date = new Date(reading.fecha);
 
-  if (!id) {
-    console.warn("Lectura sin id ignorada:", data);
-    return;
-  }
+    const clampedTemperature = Math.min(Math.max(temperature, -10), 100);
+    const clampedHumidity = Math.min(Math.max(humidity, -10), 100);
 
-  if (seenReadingIds.has(id)) {
-    return;
-  }
+    const formattedDate = date.toLocaleDateString("es-CO");
+    const formattedTime = date.toLocaleTimeString("es-CO", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
 
-  seenReadingIds.add(id);
+    temperatureLabels.push(`${formattedDate} ${formattedTime}`);
+    temperatureData.push(clampedTemperature);
+    humidityData.push(clampedHumidity);
+    fullDateData.push({
+      date: formattedDate,
+      time: formattedTime,
+    });
 
-  const clampedTemperature = Math.min(Math.max(temperature, -10), 100);
-  const clampedHumidity = Math.min(Math.max(humidity, -10), 100);
-
-  const date = new Date(timestamp);
-
-  const formattedDate = date.toLocaleDateString("es-CO");
-  const formattedTime = date.toLocaleTimeString("es-CO");
-
-  const label = `${formattedDate} ${formattedTime}`;
-
-  // Save Labels
-  temperatureLabels.push(label);
-
-  // Save Data
-  temperatureData.push(clampedTemperature);
-  humidityData.push(clampedHumidity);
-  percentageData.push(percentage);
-
-  // Save Complete Time Data
-  fullDateData.push({
-    date: formattedDate,
-    time: formattedTime,
+    return {
+      ...reading,
+      temperatura: clampedTemperature,
+      humedad: clampedHumidity,
+      fechaFormateada: formattedDate,
+      horaFormateada: formattedTime,
+    };
   });
 
-  // Limit Data Points
-  if (temperatureLabels.length > MAX_DATA_POINTS) {
-    temperatureLabels.shift();
-    temperatureData.shift();
-    humidityData.shift();
-    percentageData.shift();
-    fullDateData.shift();
+  if (formattedReadings.length) {
+    const latest = formattedReadings[formattedReadings.length - 1];
+
+    currentTemp.textContent = `${latest.temperatura}°C`;
+    currentHumidity.textContent = `${latest.humedad}%`;
+
+    renderActivityPanel(formattedReadings);
+  } else {
+    currentTemp.textContent = "--°C";
+    currentHumidity.textContent = "--%";
   }
 
-  // Update Cards
-  currentTemp.textContent = `${clampedTemperature}°C`;
-  currentHumidity.textContent = `${clampedHumidity}%`;
-
-  // Update Charts
   temperatureChart.update();
   humidityChart.update();
+}
 
-  // Update Activity Panel
-  addActivityItem({
-    temperature: clampedTemperature,
-    humidity: clampedHumidity,
-    date: formattedDate,
-    time: formattedTime,
-  });
+function renderActivityPanel(readings) {
+  const latestReadings = readings
+    .slice(-MAX_ACTIVITY_ITEMS)
+    .reverse();
+
+  latestReadings.forEach(addActivityItem);
 }
 
 // ======================================================
@@ -318,45 +267,33 @@ function updateDashboard(data) {
 // ======================================================
 
 function addActivityItem(item) {
-
   const activityElement = document.createElement("div");
-
   activityElement.classList.add("activity-item");
 
   activityElement.innerHTML = `
     <div class="activity-top">
-      <strong>Nueva lectura</strong>
-      <span class="activity-date">${item.date}</span>
+      <strong>${item.nombre_usuario || "Usuario"}</strong>
+      <span class="activity-date">${item.fechaFormateada}</span>
     </div>
 
     <div class="activity-metrics">
-
       <div class="metric temperature">
         <i class="fa-solid fa-temperature-half"></i>
-        ${item.temperature}°C
+        ${item.temperatura}°C
       </div>
-
       <div class="metric humidity">
         <i class="fa-solid fa-droplet"></i>
-        ${item.humidity}%
+        ${item.humedad}%
       </div>
-
     </div>
 
-    <div class="activity-date" style="margin-top:10px;">
-      ${item.time}
+    <div class="activity-details">
+      <span>Fecha: ${item.fechaFormateada}</span>
+      <span>Hora: ${item.horaFormateada}</span>
     </div>
   `;
 
-  // Add newest on top
-  activityList.prepend(activityElement);
-
-  // Optional limit
-  const MAX_ITEMS = 30;
-
-  while (activityList.children.length > MAX_ITEMS) {
-    activityList.removeChild(activityList.lastChild);
-  }
+  activityList.appendChild(activityElement);
 }
 
 // ======================================================
@@ -369,23 +306,3 @@ fetchSensorData();
 // Actualización automática cada 5 segundos
 setInterval(fetchSensorData, UPDATE_INTERVAL);
 
-// ======================================================
-// OPTIONAL MOCK DATA (For testing without API)
-// ======================================================
-
-/*
-Descomenta este bloque si deseas probar el dashboard
-sin conectar una API real.
-
-setInterval(() => {
-
-  const mockData = {
-    temperature: Math.floor(Math.random() * 10) + 25,
-    humidity: Math.floor(Math.random() * 30) + 50,
-    percentage: Math.floor(Math.random() * 100),
-    timestamp: new Date().toISOString(),
-  };
-
-  updateDashboard(mockData);
-
-}, 5000);
