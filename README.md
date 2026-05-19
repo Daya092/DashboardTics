@@ -1,5 +1,23 @@
 # DashboardTics
 
+Es una dashboard web que muestra lecturas ambientales en tiempo real usando datos de una API. La interfaz está construida con HTML, CSS y JavaScript, y las gráficas se generan con Chart.js.
+
+La aplicación obtiene datos desde el endpoint `/api/lecturas` y usa esa información para:
+- llenar la gráfica de temperatura con todas las lecturas disponibles,
+- llenar la gráfica de humedad con todas las lecturas disponibles,
+- mostrar los últimos 10 registros en el panel de actividad reciente.
+
+La comunicación con la API se realiza mediante `fetch()` desde `code.js`. En cada actualización se solicita el listado completo de lecturas, se ordenan por fecha ascendente y se renderizan las gráficas y la tabla de actividad.
+
+Cada lectura incluye los siguientes campos del endpoint:
+- `id`
+- `nombre_usuario`
+- `temperatura`
+- `humedad`
+- `fecha`
+
+La dashboard también actualiza los valores actuales de temperatura y humedad con la última lectura obtenida.
+
 # Para ejecutar:
 - python3 -m http.server 8000
 en otra terminal:
